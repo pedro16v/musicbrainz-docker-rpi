@@ -20,7 +20,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - dbdump:/media/dbdump
     ports:
-      - "5432:5432"
+      - "5433:5432"
     deploy:
       resources:
         limits:
