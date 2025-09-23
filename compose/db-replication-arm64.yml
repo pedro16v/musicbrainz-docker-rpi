@@ -1,0 +1,70 @@
+# Description: Database-only mirror with replication support for ARM64
+
+volumes:
+  pgdata:
+    driver: local
+  dbdump:
+    driver: local
+
+services:
+  db:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    command: postgres -c "shared_buffers=1GB" -c "max_connections=100"
+    environment:
+      - POSTGRES_DB=musicbrainz_db
+      - POSTGRES_USER=musicbrainz
+      - POSTGRES_PASSWORD=musicbrainz
+    shm_size: "1GB"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - dbdump:/media/dbdump
+    ports:
+      - "5433:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 2GB
+        reservations:
+          memory: 1GB
+
+  musicbrainz:
+    build:
+      context: build/musicbrainz
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "50"
+    volumes:
+      - dbdump:/media/dbdump
+    restart: unless-stopped
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=musicbrainz_db
+      - POSTGRES_USER=musicbrainz
+      - POSTGRES_PASSWORD=musicbrainz
+      - MUSICBRAINZ_BASE_DOWNLOAD_URL=https://data.metabrainz.org/pub/musicbrainz
+      - MUSICBRAINZ_WEB_SERVER_HOST=localhost
+      - MUSICBRAINZ_WEB_SERVER_PORT=5000
+    command: load-crontab-only.sh
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 1GB
+        reservations:
+          memory: 512MB
+
+  redis:
+    image: redis:3-alpine
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256MB
+        reservations:
+          memory: 128MB
