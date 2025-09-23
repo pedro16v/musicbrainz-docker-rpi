@@ -1,11 +1,9 @@
 ARG PYTHON_VERSION=3.13
-ARG BASE_IMAGE_DATE=20250313
-FROM metabrainz/python:$PYTHON_VERSION-$BASE_IMAGE_DATE
+FROM python:$PYTHON_VERSION-slim-bookworm
 
 ARG PYTHON_VERSION
-ARG BASE_IMAGE_DATE
 
-LABEL org.metabrainz.based-on-image="metabrainz/python:${PYTHON_VERSION}-${BASE_IMAGE_DATE}"
+LABEL org.metabrainz.based-on-image="python:${PYTHON_VERSION}-slim-bookworm"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -15,8 +13,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -qy \
+      build-essential \
       ca-certificates \
       cron \
+      curl \
       gcc \
       git \
       libc6-dev \
@@ -26,6 +26,8 @@ RUN apt-get update \
       libssl-dev \
       # required for psycopg2. Installs without it but links against a wrong .so.
       libpq-dev \
+      # required for testing search entities
+      libsqlite3-dev \
       # required by lxml from mb-rngpy
       libxslt1-dev \
       libz-dev \
@@ -37,6 +39,12 @@ RUN apt-get update \
 
 ARG SIR_VERSION=4.0.1
 LABEL org.metabrainz.sir.version="${SIR_VERSION}"
+
+ARG DOCKERIZE_VERSION=v0.6.1
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -sSLO --retry 5 https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
+    tar -C /usr/local/bin -xzvf dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
+    rm -f dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz
 
 # hadolint ignore=DL3003
 RUN git clone --depth=1 --branch "v${SIR_VERSION}" https://github.com/metabrainz/sir.git /code \

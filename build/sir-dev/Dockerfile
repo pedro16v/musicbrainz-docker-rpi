@@ -1,11 +1,9 @@
 ARG PYTHON_VERSION=3.13
-ARG BASE_IMAGE_DATE=20250313
-FROM metabrainz/python:$PYTHON_VERSION-$BASE_IMAGE_DATE
+FROM python:$PYTHON_VERSION-slim-bookworm
 
 ARG PYTHON_VERSION
-ARG BASE_IMAGE_DATE
 
-LABEL org.metabrainz.based-on-image="metabrainz/python:${PYTHON_VERSION}-${BASE_IMAGE_DATE}"
+LABEL org.metabrainz.based-on-image="python:${PYTHON_VERSION}-slim-bookworm"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
