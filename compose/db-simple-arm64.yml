@@ -1,5 +1,11 @@
 # Description: Simplified database-only setup for ARM64 testing
 
+volumes:
+  pgdata:
+    driver: local
+  dbdump:
+    driver: local
+
 services:
   db:
     image: postgres:16-bookworm
