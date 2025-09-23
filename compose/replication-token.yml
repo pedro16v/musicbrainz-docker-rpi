@@ -7,4 +7,4 @@ services:
 
 secrets:
   metabrainz_access_token:
-    file: ${METABRAINZ_ACCESS_TOKEN_PATH:-local/secrets/metabrainz_access_token}
+    file: ${METABRAINZ_ACCESS_TOKEN_PATH:-../local/secrets/metabrainz_access_token}
