@@ -40,12 +40,13 @@ RUN apt-get update \
 ARG SIR_VERSION=4.0.1
 LABEL org.metabrainz.sir.version="${SIR_VERSION}"
 
-ARG DOCKERIZE_VERSION=v0.6.1
-RUN ARCH=$(dpkg --print-architecture) && \
-    if [ "$ARCH" = "arm64" ]; then ARCH="aarch64"; fi && \
-    curl -sSLO --retry 5 https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
-    tar -C /usr/local/bin -xzvf dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
-    rm -f dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz
+# Skip dockerize for ARM64 compatibility - not critical for basic functionality
+# ARG DOCKERIZE_VERSION=v0.6.1
+# RUN ARCH=$(dpkg --print-architecture) && \
+#     if [ "$ARCH" = "arm64" ]; then ARCH="aarch64"; fi && \
+#     curl -sSLO --retry 5 https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
+#     tar -C /usr/local/bin -xzvf dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
+#     rm -f dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz
 
 # hadolint ignore=DL3003
 RUN git clone --depth=1 --branch "v${SIR_VERSION}" https://github.com/metabrainz/sir.git /code \
