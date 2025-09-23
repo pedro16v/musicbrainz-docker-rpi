@@ -30,7 +30,7 @@ services:
 
   musicbrainz:
     build:
-      context: build/musicbrainz-minimal
+      context: ../build/musicbrainz-minimal
     volumes:
       - dbdump:/media/dbdump
       - ./logs:/musicbrainz-server/logs
