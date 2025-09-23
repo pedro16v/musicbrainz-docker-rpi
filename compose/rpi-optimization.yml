@@ -1,0 +1,56 @@
+# Description: Raspberry Pi 4 optimization settings
+
+services:
+  db:
+    command: postgres -c "shared_buffers=1GB" -c "shared_preload_libraries=pg_amqp.so" -c "max_connections=100" -c "work_mem=4MB"
+    deploy:
+      resources:
+        limits:
+          memory: 2GB
+        reservations:
+          memory: 1GB
+
+  search:
+    environment:
+      - SOLR_HEAP=1g
+      - SOLR_JAVA_MEM=-Xms1g -Xmx1g
+    deploy:
+      resources:
+        limits:
+          memory: 1.5GB
+        reservations:
+          memory: 1GB
+
+  musicbrainz:
+    environment:
+      - MUSICBRAINZ_SERVER_PROCESSES=4
+    deploy:
+      resources:
+        limits:
+          memory: 1GB
+        reservations:
+          memory: 512MB
+
+  indexer:
+    deploy:
+      resources:
+        limits:
+          memory: 512MB
+        reservations:
+          memory: 256MB
+
+  mq:
+    deploy:
+      resources:
+        limits:
+          memory: 512MB
+        reservations:
+          memory: 256MB
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 256MB
+        reservations:
+          memory: 128MB

@@ -11,9 +11,10 @@ LABEL org.metabrainz.based-on-image="metabrainz/base-image:${METABRAINZ_BASE_IMA
 ARG DEBIAN_FRONTEND=noninteractive
 
 ARG DOCKERIZE_VERSION=v0.6.1
-RUN curl -sSLO --retry 5 https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && \
-    tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && \
-    rm -f dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -sSLO --retry 5 https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
+    tar -C /usr/local/bin -xzvf dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
+    rm -f dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz
 
 ARG PERL_VERSION=5.38.2
 ARG PERL_SRC_SUM=a0a31534451eb7b83c7d6594a497543a54d488bc90ca00f5e34762577f40655e
