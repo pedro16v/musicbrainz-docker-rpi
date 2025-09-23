@@ -12,6 +12,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 ARG DOCKERIZE_VERSION=v0.6.1
 RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "arm64" ]; then ARCH="aarch64"; fi && \
     curl -sSLO --retry 5 https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
     tar -C /usr/local/bin -xzvf dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz && \
     rm -f dockerize-linux-${ARCH}-$DOCKERIZE_VERSION.tar.gz
