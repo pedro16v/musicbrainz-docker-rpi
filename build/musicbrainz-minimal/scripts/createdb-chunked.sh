@@ -80,7 +80,7 @@ if [[ $FETCH_DUMPS == "-fetch" ]]; then
     if [[ -n "$WGET_OPTIONS" ]]; then
         FETCH_OPTIONS+=(--wget-options "$WGET_OPTIONS")
     fi
-    fetch-dump.sh "${FETCH_OPTIONS[@]}"
+    fetch-dump-safe.sh "${FETCH_OPTIONS[@]}"
 fi
 
 for F in "${DUMP_FILES[@]}"; do
