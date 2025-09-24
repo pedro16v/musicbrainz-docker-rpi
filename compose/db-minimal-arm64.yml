@@ -40,7 +40,7 @@ services:
 
   musicbrainz-minimal:
     build:
-      context: build/musicbrainz-minimal
+      context: ../build/musicbrainz-minimal
     volumes:
       - /mnt/storage/musicbrainz/dbdump:/media/dbdump
       - ./logs:/musicbrainz-server/logs
