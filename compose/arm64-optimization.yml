@@ -1,0 +1,27 @@
+# Description: ARM64 specific optimizations for minimal setup
+
+services:
+  db:
+    command: postgres -c "shared_buffers=256MB" -c "max_connections=25" -c "work_mem=2MB" -c "maintenance_work_mem=64MB" -c "effective_cache_size=256MB"
+    deploy:
+      resources:
+        limits:
+          memory: 512MB
+        reservations:
+          memory: 256MB
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 64MB
+        reservations:
+          memory: 32MB
+
+  musicbrainz-minimal:
+    deploy:
+      resources:
+        limits:
+          memory: 128MB
+        reservations:
+          memory: 64MB
