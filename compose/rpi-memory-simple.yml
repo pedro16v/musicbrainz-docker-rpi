@@ -1,5 +1,5 @@
-# Description: Raspberry Pi memory-optimized settings for full data import
-# This configuration is designed to work with a 16GB swap file on USB 3.0 drive
+# Description: Simple Raspberry Pi memory-optimized settings (no sysctl requirements)
+# This configuration works without requiring system-level kernel parameter changes
 
 services:
   db:
@@ -28,8 +28,6 @@ services:
           memory: 512MB
     environment:
       - POSTGRES_INITDB_ARGS=--data-checksums
-    # Note: System-level memory optimizations should be applied via optimize-rpi-memory.sh
-    # Container-level optimizations are handled through PostgreSQL parameters
 
   redis:
     deploy:
