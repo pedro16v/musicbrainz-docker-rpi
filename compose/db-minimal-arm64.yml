@@ -16,7 +16,7 @@ services:
     shm_size: "512MB"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - /mnt/storage/musicbrainz/dbdump:/media/dbdump
+      - ~/musicbrainz-data/dbdump:/media/dbdump
     ports:
       - "5432:5432"  # Direct database access
     deploy:
@@ -42,7 +42,7 @@ services:
     build:
       context: ../build/musicbrainz-minimal
     volumes:
-      - /mnt/storage/musicbrainz/dbdump:/media/dbdump
+      - ~/musicbrainz-data/dbdump:/media/dbdump
       - ./logs:/musicbrainz-server/logs
     restart: unless-stopped
     environment:
