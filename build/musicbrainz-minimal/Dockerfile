@@ -30,6 +30,11 @@ RUN apt-get update && apt-get install -y \
     libtry-tiny-perl \
     libclass-load-perl \
     libfile-slurp-perl \
+    libaliased-perl \
+    libdatetime-perl \
+    \
+    libdatetime-timezone-perl \
+     
     cpanminus \
     && rm -rf /var/lib/apt/lists/*
 
@@ -39,6 +44,9 @@ RUN cpanm --notest --quiet \
     Readonly \
     Cache::Memcached::Fast \
     JSON::XS \
+    List::AllUtils \
+    Throwable \
+    DBIx::Connector \
     || echo "Some CPAN modules may not be available, will try with git clone"
 
 # Clone MusicBrainz server for replication scripts only
@@ -47,11 +55,13 @@ RUN git clone --depth=1 --branch $MUSICBRAINZ_SERVER_VERSION https://github.com/
 
 WORKDIR /musicbrainz-server
 
+# Copy minimal scripts
 # Copy a minimal DBDefs.pm for replication
-RUN cp lib/DBDefs.pm.sample lib/DBDefs.pm
 
 # Copy minimal scripts
 COPY scripts/* /usr/local/bin/
+# Copy a minimal DBDefs.pm for replication
+RUN cp /usr/local/bin/DBDefs.pm lib/DBDefs.pm
 RUN chmod +x /usr/local/bin/*
 
 # Environment variables for replication

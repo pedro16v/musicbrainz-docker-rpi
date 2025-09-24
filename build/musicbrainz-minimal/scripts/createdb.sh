@@ -108,5 +108,5 @@ export MUSICBRAINZ_POSTGRES_USERNAME=${POSTGRES_USER:-musicbrainz}
 export MUSICBRAINZ_POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-musicbrainz}
 
 # Run InitDb.pl
-cd /musicbrainz-server
-perl admin/InitDb.pl $INITDB_OPTIONS -- --skip-editor --tmp-dir $TMP_DIR "${DUMP_FILES[@]}"
+cd /media/dbdump
+perl /musicbrainz-server/admin/InitDb.pl $INITDB_OPTIONS -- --skip-editor --tmp-dir $TMP_DIR "${DUMP_FILES[@]}"
