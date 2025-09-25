@@ -7,7 +7,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
-    postgresql-client \
+    postgresql-client-14 \
+    postgresql-client-common \
+    libpq-dev \
     python3 \
     python3-pip \
     git \
