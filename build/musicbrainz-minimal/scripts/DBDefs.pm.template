@@ -45,7 +45,7 @@ MusicBrainz::Server::DatabaseConnectionFactory->register_databases(
 sub DB_SCHEMA_SEQUENCE { 30 }
 
 # Replication configuration
-sub REPLICATION_TYPE { ${REPLICATION_TYPE} }
+sub REPLICATION_TYPE { RT_MIRROR }
 sub REPLICATION_ACCESS_TOKEN { '${REPLICATION_ACCESS_TOKEN}' }
 
 # Redis configuration

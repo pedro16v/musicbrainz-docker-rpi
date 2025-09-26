@@ -348,6 +348,33 @@ docker compose exec musicbrainz-minimal cat logs/replication.log > replication_l
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
 - [GitHub Issues](https://github.com/pedro16v/musicbrainz-docker-rpi/issues)
 
+### Template Processing Issues
+
+**Symptom:** The `DBDefs.pm` file shows placeholder values like `'YOUR_TOKEN_HERE'` or incorrect hostnames like `db` instead of `db-test`.
+**Cause:** The template processing system (`envsubst`) didn't properly substitute environment variables.
+**Solution:** 
+1. **Use the enhanced configuration script:** `./scripts/configure-replication.sh`
+2. **Manual fix:** Check that all required environment variables are exported before running `envsubst`
+3. **Verify template:** Ensure `DBDefs.pm.template` contains proper `${VARIABLE}` placeholders
+
+**Enhanced Template System:**
+The repository now includes an enhanced template processing system that:
+- Automatically detects the environment (production, test, dev)
+- Sets appropriate database and Redis hostnames
+- Validates configuration after processing
+- Provides detailed logging and error messages
+
+### Environment-Specific Configuration Issues
+
+**Symptom:** Database connection fails with "could not translate host name" errors.
+**Cause:** The container is trying to connect to the wrong database service name.
+**Solution:**
+- **Test environment:** Should connect to `db-test`, not `db`
+- **Dev environment:** Should connect to `db-dev`, not `db`
+- **Production environment:** Should connect to `db`
+
+The enhanced configuration script automatically handles these environment-specific settings.
+
 ## 🔄 Maintenance
 
 ### Regular Checks

@@ -106,6 +106,27 @@ For ARM64 systems (Raspberry Pi, ARM servers), we provide a minimal replication-
    docker compose exec musicbrainz-minimal replication.sh &
    ```
 
+### Enhanced Template System
+
+The repository now includes an enhanced template processing system that automatically handles environment-specific configuration:
+
+- **Automatic Environment Detection**: Detects production, test, or dev environments
+- **Dynamic Host Configuration**: Sets appropriate database and Redis hostnames
+- **Validation**: Verifies configuration after processing
+- **Error Handling**: Provides detailed logging and troubleshooting information
+
+Use the enhanced configuration script:
+```bash
+./scripts/configure-replication.sh
+```
+
+This script automatically:
+- Detects your environment (production/test/dev)
+- Sets the correct database host (`db`, `db-test`, or `db-dev`)
+- Sets the correct Redis host (`redis`, `redis-test`, or `redis-dev`)
+- Applies your MetaBrainz access token
+- Validates the configuration
+
 ### ARM64 Requirements
 
 - **CPU**: ARM64 compatible (Raspberry Pi 4+, ARM servers)

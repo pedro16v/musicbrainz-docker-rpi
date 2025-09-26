@@ -161,29 +161,39 @@ else
     log_success "Access token already exists"
 fi
 
-# Step 3: Configure replication in container
+# Step 3: Configure replication using enhanced template system
 log_info "Configuring replication in container..."
 TOKEN=$(cat local/secrets/metabrainz_access_token | tr -d '\n')
 
-# Use environment-based configuration if template exists
-if docker compose exec musicbrainz-minimal test -f /musicbrainz-server/lib/DBDefs.pm.template; then
-    log_info "Using template-based configuration..."
-    docker compose exec musicbrainz-minimal bash -c "
-        export REPLICATION_TYPE=RT_MIRROR
-        export REPLICATION_ACCESS_TOKEN='$TOKEN'
-        export POSTGRES_HOST=\${POSTGRES_HOST:-db}
-        export POSTGRES_PORT=\${POSTGRES_PORT:-5432}
-        export POSTGRES_DB=\${POSTGRES_DB:-musicbrainz_db}
-        export POSTGRES_USER=\${POSTGRES_USER:-musicbrainz}
-        export POSTGRES_PASSWORD=\${POSTGRES_PASSWORD:-musicbrainz}
-        envsubst < /musicbrainz-server/lib/DBDefs.pm.template > /musicbrainz-server/lib/DBDefs.pm
-    "
+# Use the enhanced configuration script
+if [ -f "scripts/configure-replication.sh" ]; then
+    log_info "Using enhanced template-based configuration..."
+    if ! ./scripts/configure-replication.sh; then
+        handle_error "config_template" "Failed to apply DBDefs.pm template"
+    fi
 else
-    log_info "Using legacy configuration method..."
-    docker compose exec musicbrainz-minimal sed -i "s/# sub REPLICATION_TYPE { RT_STANDALONE }/sub REPLICATION_TYPE { RT_MIRROR }/" /musicbrainz-server/lib/DBDefs.pm
-    docker compose exec musicbrainz-minimal sed -i "s/# sub REPLICATION_ACCESS_TOKEN { '' }/sub REPLICATION_ACCESS_TOKEN { '$TOKEN' }/" /musicbrainz-server/lib/DBDefs.pm
-    docker compose exec musicbrainz-minimal sed -i "s/#       host            => '',/        host            => '\${POSTGRES_HOST:-db}',/" /musicbrainz-server/lib/DBDefs.pm
-    docker compose exec musicbrainz-minimal sed -i "s/#       port            => '',/        port            => '\${POSTGRES_PORT:-5432}',/" /musicbrainz-server/lib/DBDefs.pm
+    log_warning "Enhanced configuration script not found, using legacy method..."
+    # Use environment-based configuration if template exists
+    if docker compose exec musicbrainz-minimal test -f /musicbrainz-server/lib/DBDefs.pm.template; then
+        log_info "Using template-based configuration..."
+        docker compose exec musicbrainz-minimal bash -c "
+            export REPLICATION_ACCESS_TOKEN='$TOKEN'
+            export POSTGRES_HOST=\${POSTGRES_HOST:-db}
+            export POSTGRES_PORT=\${POSTGRES_PORT:-5432}
+            export POSTGRES_DB=\${POSTGRES_DB:-musicbrainz_db}
+            export POSTGRES_USER=\${POSTGRES_USER:-musicbrainz}
+            export POSTGRES_PASSWORD=\${POSTGRES_PASSWORD:-musicbrainz}
+            export REDIS_SERVER=\${REDIS_SERVER:-redis}
+            export REDIS_PORT=\${REDIS_PORT:-6379}
+            envsubst < /musicbrainz-server/lib/DBDefs.pm.template > /musicbrainz-server/lib/DBDefs.pm
+        "
+    else
+        log_info "Using legacy configuration method..."
+        docker compose exec musicbrainz-minimal sed -i "s/# sub REPLICATION_TYPE { RT_STANDALONE }/sub REPLICATION_TYPE { RT_MIRROR }/" /musicbrainz-server/lib/DBDefs.pm
+        docker compose exec musicbrainz-minimal sed -i "s/# sub REPLICATION_ACCESS_TOKEN { '' }/sub REPLICATION_ACCESS_TOKEN { '$TOKEN' }/" /musicbrainz-server/lib/DBDefs.pm
+        docker compose exec musicbrainz-minimal sed -i "s/#       host            => '',/        host            => '\${POSTGRES_HOST:-db}',/" /musicbrainz-server/lib/DBDefs.pm
+        docker compose exec musicbrainz-minimal sed -i "s/#       port            => '',/        port            => '\${POSTGRES_PORT:-5432}',/" /musicbrainz-server/lib/DBDefs.pm
+    fi
 fi
 
 # Step 4: Test database connection
