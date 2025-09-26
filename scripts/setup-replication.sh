@@ -15,15 +15,15 @@ if [ ! -f "docker-compose.yml" ]; then
 fi
 
 # Check if containers are running
-if ! docker compose -f compose/db-minimal-arm64.yml ps | grep -q "Up"; then
+if ! docker compose ps | grep -q "Up"; then
     echo "Error: Containers are not running. Please start them first:"
-    echo "  docker compose -f compose/db-minimal-arm64.yml up -d"
+    echo "  docker compose up -d"
     exit 1
 fi
 
 echo "Step 1: Installing missing Perl dependencies..."
-docker compose -f compose/db-minimal-arm64.yml exec --user root musicbrainz-minimal apt update
-docker compose -f compose/db-minimal-arm64.yml exec --user root musicbrainz-minimal apt install -y libgnupg-perl libredis-perl
+docker compose exec --user root musicbrainz-minimal apt update
+docker compose exec --user root musicbrainz-minimal apt install -y libgnupg-perl libredis-perl
 
 echo "Step 2: Setting up replication access token..."
 if [ ! -f "local/secrets/metabrainz_access_token" ]; then
@@ -52,24 +52,24 @@ fi
 
 echo "Step 3: Configuring replication in container..."
 TOKEN=$(cat local/secrets/metabrainz_access_token | tr -d '\n')
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal sed -i "s/# sub REPLICATION_ACCESS_TOKEN { 'YOUR_TOKEN_HERE' }/sub REPLICATION_ACCESS_TOKEN { '$TOKEN' }/" /musicbrainz-server/lib/DBDefs.pm
+docker compose exec musicbrainz-minimal sed -i "s/# sub REPLICATION_ACCESS_TOKEN { 'YOUR_TOKEN_HERE' }/sub REPLICATION_ACCESS_TOKEN { '$TOKEN' }/" /musicbrainz-server/lib/DBDefs.pm
 
 echo "Step 4: Setting up replication database tables..."
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -f /musicbrainz-server/admin/sql/dbmirror2/ReplicationSetup.sql'
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -f /musicbrainz-server/admin/sql/dbmirror2/ReplicationSetup.sql'
 
 echo "Step 5: Testing replication..."
 echo "Starting replication test (this may take a few minutes)..."
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal bash -c 'cd /musicbrainz-server && PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz timeout 60 ./admin/replication/LoadReplicationChanges' || true
+docker compose exec musicbrainz-minimal bash -c 'cd /musicbrainz-server && PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz timeout 60 ./admin/replication/LoadReplicationChanges' || true
 
 echo
 echo "=== Setup Complete! ==="
 echo
 echo "To start replication in the background:"
-echo "  docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal replication.sh &"
+echo "  docker compose exec musicbrainz-minimal replication.sh &"
 echo
 echo "To check replication status:"
-echo "  docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal tail -f logs/replication.log"
+echo "  docker compose exec musicbrainz-minimal tail -f logs/replication.log"
 echo
 echo "To check replication data:"
-echo "  docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c \"SELECT COUNT(*) FROM dbmirror2.pending_data;\"'"
+echo "  docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c \"SELECT COUNT(*) FROM dbmirror2.pending_data;\"'"
 echo

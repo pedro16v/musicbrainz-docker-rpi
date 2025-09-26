@@ -20,7 +20,7 @@ This guide provides step-by-step instructions for setting up MusicBrainz replica
 
 2. **Start the containers:**
    ```bash
-   docker compose -f compose/db-minimal-arm64.yml up -d
+   docker compose up -d
    ```
 
 3. **Run the automated setup script:**
@@ -30,7 +30,7 @@ This guide provides step-by-step instructions for setting up MusicBrainz replica
 
 4. **Start replication:**
    ```bash
-   docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal replication.sh &
+   docker compose exec musicbrainz-minimal replication.sh &
    ```
 
 ## Manual Setup (Alternative)
@@ -55,31 +55,31 @@ chmod 600 local/secrets/metabrainz_access_token
 ### Step 3: Install Missing Dependencies
 
 ```bash
-docker compose -f compose/db-minimal-arm64.yml exec --user root musicbrainz-minimal apt update
-docker compose -f compose/db-minimal-arm64.yml exec --user root musicbrainz-minimal apt install -y libgnupg-perl libredis-perl
+docker compose exec --user root musicbrainz-minimal apt update
+docker compose exec --user root musicbrainz-minimal apt install -y libgnupg-perl libredis-perl
 ```
 
 ### Step 4: Configure Replication
 
 ```bash
 # Set replication type to MIRROR
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal sed -i "s/# sub REPLICATION_TYPE { RT_STANDALONE }/sub REPLICATION_TYPE { RT_MIRROR }/" /musicbrainz-server/lib/DBDefs.pm
+docker compose exec musicbrainz-minimal sed -i "s/# sub REPLICATION_TYPE { RT_STANDALONE }/sub REPLICATION_TYPE { RT_MIRROR }/" /musicbrainz-server/lib/DBDefs.pm
 
 # Set access token
 TOKEN=$(cat local/secrets/metabrainz_access_token | tr -d '\n')
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal sed -i "s/# sub REPLICATION_ACCESS_TOKEN { '' }/sub REPLICATION_ACCESS_TOKEN { '$TOKEN' }/" /musicbrainz-server/lib/DBDefs.pm
+docker compose exec musicbrainz-minimal sed -i "s/# sub REPLICATION_ACCESS_TOKEN { '' }/sub REPLICATION_ACCESS_TOKEN { '$TOKEN' }/" /musicbrainz-server/lib/DBDefs.pm
 ```
 
 ### Step 5: Setup Database Tables
 
 ```bash
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -f /musicbrainz-server/admin/sql/dbmirror2/ReplicationSetup.sql'
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -f /musicbrainz-server/admin/sql/dbmirror2/ReplicationSetup.sql'
 ```
 
 ### Step 6: Start Replication
 
 ```bash
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal replication.sh &
+docker compose exec musicbrainz-minimal replication.sh &
 ```
 
 ## Monitoring Replication
@@ -88,20 +88,20 @@ docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal replicat
 
 ```bash
 # View replication logs
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal tail -f logs/replication.log
+docker compose exec musicbrainz-minimal tail -f logs/replication.log
 
 # Check if replication process is running
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal ps aux | grep LoadReplication
+docker compose exec musicbrainz-minimal ps aux | grep LoadReplication
 
 # Check replication data
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c "SELECT COUNT(*) FROM dbmirror2.pending_data;"'
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c "SELECT COUNT(*) FROM dbmirror2.pending_data;"'
 ```
 
 ### Check Database Status
 
 ```bash
 # Connect to database
-docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db'
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db'
 
 # Check replication tables
 \dt dbmirror2.*
@@ -125,7 +125,7 @@ SELECT * FROM dbmirror2.pending_ts ORDER BY ts DESC LIMIT 5;
 3. **"Can't locate GnuPG.pm"**
    - Install missing Perl modules:
      ```bash
-     docker compose -f compose/db-minimal-arm64.yml exec --user root musicbrainz-minimal apt install -y libgnupg-perl libredis-perl
+     docker compose exec --user root musicbrainz-minimal apt install -y libgnupg-perl libredis-perl
      ```
 
 4. **Database connection issues**
@@ -137,13 +137,13 @@ SELECT * FROM dbmirror2.pending_ts ORDER BY ts DESC LIMIT 5;
 5. **"relation dbmirror2.pending_data does not exist"**
    - Run the replication setup SQL:
      ```bash
-     docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -f /musicbrainz-server/admin/sql/dbmirror2/ReplicationSetup.sql'
+     docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -f /musicbrainz-server/admin/sql/dbmirror2/ReplicationSetup.sql'
      ```
 
 ### Log Files
 
 - Replication logs: `logs/replication.log` (inside container)
-- Container logs: `docker compose -f compose/db-minimal-arm64.yml logs musicbrainz-minimal`
+- Container logs: `docker compose logs musicbrainz-minimal`
 
 ### Performance Optimization
 

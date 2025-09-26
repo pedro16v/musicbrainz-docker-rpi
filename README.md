@@ -92,7 +92,7 @@ For ARM64 systems (Raspberry Pi, ARM servers), we provide a minimal replication-
 
 1. **Start the minimal containers:**
    ```bash
-   docker compose -f compose/db-minimal-arm64.yml up -d
+   docker compose up -d
    ```
 
 2. **Run the automated setup:**
@@ -102,7 +102,7 @@ For ARM64 systems (Raspberry Pi, ARM servers), we provide a minimal replication-
 
 3. **Start replication:**
    ```bash
-   docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal replication.sh &
+   docker compose exec musicbrainz-minimal replication.sh &
    ```
 
 ### ARM64 Requirements

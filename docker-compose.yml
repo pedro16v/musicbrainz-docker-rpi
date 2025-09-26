@@ -1,128 +1,63 @@
-# Description: Default compose file, with host port for musicbrainz
-
-volumes:
-  mqdata:
-    driver: local
-  pgdata:
-    driver: local
-  solrdata:
-    driver: local
-  dbdump:
-    driver: local
-  solrdump:
-    driver: local
+# Description: ARM64 optimized MusicBrainz replication setup
 
 services:
   db:
-    build:
-      context: build/postgres-prebuilt
-    image: musicbrainz-docker_db:${POSTGRES_VERSION:-16}
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "10"
+    image: postgres:16-bookworm  # ARM64 compatible
     restart: unless-stopped
-    command: postgres -c "shared_buffers=2048MB" -c "shared_preload_libraries=pg_amqp.so"
-    env_file:
-      - ./default/postgres.env
-    shm_size: "2GB"
+    command: postgres -c "shared_buffers=512MB" -c "max_connections=50" -c "work_mem=4MB"
+    environment:
+      - POSTGRES_DB=musicbrainz_db
+      - POSTGRES_USER=musicbrainz
+      - POSTGRES_PASSWORD=musicbrainz
+    shm_size: "512MB"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    expose:
-      - "5432"
-
-  musicbrainz:
-    build:
-      context: build/musicbrainz-prebuilt
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
-        max-file: "50"
+      - /mnt/storage/musicbrainz-docker-arm/postgres-data:/var/lib/postgresql/data
+      - /mnt/storage/musicbrainz/dbdump:/media/dbdump
     ports:
-      - "${MUSICBRAINZ_DOCKER_HOST_IPADDRCOL:-}${MUSICBRAINZ_WEB_SERVER_PORT:-5000}:5000"
-    volumes:
-      - dbdump:/media/dbdump
-      - solrdump:/var/cache/musicbrainz/solr-backups:ro
-    restart: unless-stopped
-    env_file:
-      - ./default/postgres.env
-    environment:
-      - MUSICBRAINZ_BASE_FTP_URL=${MUSICBRAINZ_BASE_FTP_URL:-}
-      - MUSICBRAINZ_BASE_DOWNLOAD_URL=${MUSICBRAINZ_BASE_DOWNLOAD_URL:-https://data.metabrainz.org/pub/musicbrainz}
-      - MUSICBRAINZ_SERVER_PROCESSES=${MUSICBRAINZ_SERVER_PROCESSES:-10}
-      - MUSICBRAINZ_USE_PROXY=1
-      - MUSICBRAINZ_WEB_SERVER_HOST=${MUSICBRAINZ_WEB_SERVER_HOST:-localhost}
-      - MUSICBRAINZ_WEB_SERVER_PORT=${MUSICBRAINZ_WEB_SERVER_PORT:-5000}
-    depends_on:
-      - db
-      - mq
-      - search
-      - redis
-
-  indexer:
-    build: build/sir
-    env_file:
-      - ./default/postgres.env
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "10"
-    volumes:
-      - ${SIR_CONFIG_PATH:-./default/indexer.ini}:/code/config.ini
-    depends_on:
-      - db
-      - mq
-      - search
-
-  search:
-    build:
-      context: build/solr
-      args:
-        - MB_SOLR_VERSION=${MB_SOLR_VERSION:-4.1.0}
-    image: musicbrainz-docker_search:${MB_SOLR_VERSION:-4.1.0}
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "10"
-    restart: unless-stopped
-    environment:
-      - SOLR_HEAP=2g
-      - LOG4J_FORMAT_MSG_NO_LOOKUPS=true
-    mem_swappiness: 1
-    expose:
-      - "8983"
-    volumes:
-      - dbdump:/media/dbdump:ro
-      - solrdata:/var/solr
-      - solrdump:/var/cache/musicbrainz/solr-backups
-
-  mq:
-    build: build/rabbitmq
-    hostname: "mq"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "10"
-    restart: unless-stopped
-    ulimits:
-      nofile: 65536
-    volumes:
-      - mqdata:/var/lib/rabbitmq
-    expose:
-      - "5672"
+      - "5432:5432"  # Direct database access
+    deploy:
+      resources:
+        limits:
+          memory: 1GB
+        reservations:
+          memory: 512MB
 
   redis:
-    image: redis:3-alpine
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "10"
+    image: redis:3-alpine  # ARM64 compatible
     restart: unless-stopped
-    expose:
-      - "6379"
+    ports:
+      - "6379:6379"  # Direct Redis access if needed
+    deploy:
+      resources:
+        limits:
+          memory: 128MB
+        reservations:
+          memory: 64MB
+
+  musicbrainz-minimal:
+    build:
+      context: build/musicbrainz-minimal
+    volumes:
+      - /mnt/storage/musicbrainz/dbdump:/media/dbdump
+      - ./logs:/musicbrainz-server/logs
+    restart: unless-stopped
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=musicbrainz_db
+      - POSTGRES_USER=musicbrainz
+      - POSTGRES_PASSWORD=musicbrainz
+      - MUSICBRAINZ_BASE_DOWNLOAD_URL=https://data.metabrainz.org/pub/musicbrainz
+      - MUSICBRAINZ_REDIS_SERVER=redis
+      - MUSICBRAINZ_POSTGRES_SERVER=db
+      - MUSICBRAINZ_POSTGRES_READONLY_SERVER=db
+    depends_on:
+      - db
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 256MB
+        reservations:
+          memory: 128MB
+    command: sleep infinity  # Keep container running for manual operations
