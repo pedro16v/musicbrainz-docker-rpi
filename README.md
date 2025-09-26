@@ -130,14 +130,17 @@ For Digital Ocean ARM64 droplets, we provide a fully automated deployment script
 ### One-Command Deployment
 
 ```bash
-# Deploy to Digital Ocean ARM64 droplet
+# Deploy to Digital Ocean ARM64 droplet (new server)
 curl -sSL https://raw.githubusercontent.com/pedro16v/musicbrainz-docker-rpi/main/scripts/deploy-arm64.sh | sudo bash
+
+# Deploy to existing server (skip system setup)
+curl -sSL https://raw.githubusercontent.com/pedro16v/musicbrainz-docker-rpi/main/scripts/deploy-arm64.sh | sudo bash -s -- --skip-system-setup
 ```
 
 ### What's Included
 
-- ✅ **System optimization** (swap file, Digital Ocean analytics)
-- ✅ **Dependency installation** (Docker, PostgreSQL client, monitoring tools)
+- ✅ **System optimization** (swap file, Digital Ocean analytics) - *skipped with --skip-system-setup*
+- ✅ **Dependency installation** (Docker, PostgreSQL client, monitoring tools) - *skipped with --skip-system-setup*
 - ✅ **Automated setup** (container building, replication configuration)
 - ✅ **Database views** (monitoring and statistics)
 - ✅ **Port publishing** (database access from external systems)

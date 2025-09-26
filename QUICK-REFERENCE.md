@@ -3,13 +3,19 @@
 ## Digital Ocean Deployment
 
 ```bash
-# One-command deployment
+# One-command deployment (new server)
 curl -sSL https://raw.githubusercontent.com/pedro16v/musicbrainz-docker-rpi/main/scripts/deploy-arm64.sh | sudo bash
+
+# One-command deployment (existing server)
+curl -sSL https://raw.githubusercontent.com/pedro16v/musicbrainz-docker-rpi/main/scripts/deploy-arm64.sh | sudo bash -s -- --skip-system-setup
 
 # Manual deployment
 git clone https://github.com/pedro16v/musicbrainz-docker-rpi.git musicbrainz-docker-arm
 cd musicbrainz-docker-arm
 sudo ./scripts/deploy-arm64.sh
+
+# Manual deployment (existing server)
+sudo ./scripts/deploy-arm64.sh --skip-system-setup
 ```
 
 ## Setup Commands

@@ -14,8 +14,11 @@ This guide provides step-by-step instructions for deploying MusicBrainz replicat
 ### Option 1: One-Command Deployment
 
 ```bash
-# Download and run the automated deployment script
+# Full deployment (new server)
 curl -sSL https://raw.githubusercontent.com/pedro16v/musicbrainz-docker-rpi/main/scripts/deploy-arm64.sh | sudo bash
+
+# Deployment on existing server (skip system setup)
+curl -sSL https://raw.githubusercontent.com/pedro16v/musicbrainz-docker-rpi/main/scripts/deploy-arm64.sh | sudo bash -s -- --skip-system-setup
 ```
 
 ### Option 2: Manual Deployment
@@ -31,9 +34,30 @@ curl -sSL https://raw.githubusercontent.com/pedro16v/musicbrainz-docker-rpi/main
    git clone https://github.com/pedro16v/musicbrainz-docker-rpi.git musicbrainz-docker-arm
    cd musicbrainz-docker-arm
    
-   # Run deployment script
+   # Full deployment
    sudo ./scripts/deploy-arm64.sh
+   
+   # Or skip system setup on existing server
+   sudo ./scripts/deploy-arm64.sh --skip-system-setup
    ```
+
+## When to Use --skip-system-setup
+
+Use the `--skip-system-setup` flag when:
+
+- **Existing server**: Docker and dependencies are already installed
+- **Development environment**: You're deploying on a development machine
+- **CI/CD pipeline**: Automated deployment in existing infrastructure
+- **Re-deployment**: Updating an existing MusicBrainz installation
+- **Custom setup**: You have specific system configurations
+
+### Prerequisites for --skip-system-setup
+
+- Docker installed and running
+- Docker Compose available (`docker-compose` or `docker compose`)
+- Git installed
+- PostgreSQL client tools (optional, for database access)
+- Root or sudo access
 
 ## What the Deployment Script Does
 

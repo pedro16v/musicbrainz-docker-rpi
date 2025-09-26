@@ -5,7 +5,39 @@
 
 set -e
 
+# Parse command line arguments
+SKIP_SYSTEM_SETUP=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --skip-system-setup)
+            SKIP_SYSTEM_SETUP=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [OPTIONS]"
+            echo "Options:"
+            echo "  --skip-system-setup    Skip system optimization and dependency installation"
+            echo "  --help, -h            Show this help message"
+            echo
+            echo "Examples:"
+            echo "  $0                     # Full deployment with system setup"
+            echo "  $0 --skip-system-setup # Deploy on existing server (skip system setup)"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
 echo "=== MusicBrainz ARM64 Automated Deployment ==="
+if [ "$SKIP_SYSTEM_SETUP" = true ]; then
+    echo "Mode: Existing server deployment (skipping system setup)"
+else
+    echo "Mode: Full deployment with system setup"
+fi
 echo
 
 # Check if running as root
@@ -26,50 +58,49 @@ if [[ "$ARCH" != "aarch64" && "$ARCH" != "arm64" ]]; then
     fi
 fi
 
-echo "Step 1: System optimization..."
+if [ "$SKIP_SYSTEM_SETUP" = false ]; then
+    echo "Step 1: System optimization..."
 
-# Install Digital Ocean analytics (optional)
-if command -v curl >/dev/null 2>&1; then
-    echo "Installing Digital Ocean analytics..."
-    curl -sSL https://repos.insights.digitalocean.com/install.sh | bash || echo "Analytics installation failed, continuing..."
-fi
+    echo "Step 2: Installing dependencies..."
 
-# Create swap file for memory optimization
-if [ ! -f /swapfile ]; then
-    echo "Creating 4GB swap file..."
-    fallocate -l 4G /swapfile
-    chmod 600 /swapfile
-    mkswap /swapfile
-    swapon /swapfile
-    echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
-    echo "Swap file created successfully"
+    # Update package list
+    apt-get update
+
+    # Install essential packages
+    apt-get install -y \
+        docker.io \
+        docker-compose \
+        git \
+        postgresql-client-16 \
+        curl \
+        wget \
+        htop \
+        unzip
+
+    # Enable and start Docker
+    systemctl enable --now docker.service
+
+    # Add current user to docker group (if not root)
+    if [ "$SUDO_USER" ]; then
+        usermod -aG docker "$SUDO_USER"
+        echo "Added $SUDO_USER to docker group"
+    fi
 else
-    echo "Swap file already exists"
-fi
-
-echo "Step 2: Installing dependencies..."
-
-# Update package list
-apt-get update
-
-# Install essential packages
-apt-get install -y \
-    docker.io \
-    docker-compose \
-    git \
-    postgresql-client-16 \
-    curl \
-    wget \
-    htop \
-    unzip
-
-# Enable and start Docker
-systemctl enable --now docker.service
-
-# Add current user to docker group (if not root)
-if [ "$SUDO_USER" ]; then
-    usermod -aG docker "$SUDO_USER"
-    echo "Added $SUDO_USER to docker group"
+    echo "Skipping system optimization and dependency installation..."
+    echo "Assuming Docker and dependencies are already installed"
+    
+    # Validate that Docker is available
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Error: Docker is not installed. Please install Docker first or run without --skip-system-setup"
+        exit 1
+    fi
+    
+    if ! command -v docker-compose >/dev/null 2>&1 && ! docker compose version >/dev/null 2>&1; then
+        echo "Error: Docker Compose is not installed. Please install Docker Compose first or run without --skip-system-setup"
+        exit 1
+    fi
+    
+    echo "Docker validation passed"
 fi
 
 echo "Step 3: Setting up project..."
