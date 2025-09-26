@@ -34,9 +34,9 @@ RUN apt-get update && apt-get install -y \
     libfile-slurp-perl \
     libaliased-perl \
     libdatetime-perl \
-    \
     libdatetime-timezone-perl \
-     
+    libgnupg-perl \
+    libredis-perl \
     cpanminus \
     && rm -rf /var/lib/apt/lists/*
 
@@ -49,6 +49,7 @@ RUN cpanm --notest --quiet \
     List::AllUtils \
     Throwable \
     DBIx::Connector \
+    GnuPG \
     || echo "Some CPAN modules may not be available, will try with git clone"
 
 # Clone MusicBrainz server for replication scripts only

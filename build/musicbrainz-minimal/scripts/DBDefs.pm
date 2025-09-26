@@ -32,16 +32,16 @@ MusicBrainz::Server::DatabaseConnectionFactory->register_databases(
         database    => 'musicbrainz_db',
         username    => 'musicbrainz',
         password        => 'musicbrainz',
-#       host            => '',
-#       port            => '',
+        host            => 'db',
+        port            => '5432',
     },
     # How to connect to a test database
     TEST => {
         database    => 'musicbrainz_test',
         username    => 'musicbrainz',
         password        => 'musicbrainz',
-#       host            => '',
-#       port            => '',
+        host            => 'db',
+        port            => '5432',
     },
     # How to connect to a Selenium test database. This database is created
     # (and dropped) automatically by t/selenium.mjs, and uses the TEST
@@ -58,17 +58,17 @@ MusicBrainz::Server::DatabaseConnectionFactory->register_databases(
         database    => 'musicbrainz_db',
         username    => 'musicbrainz',
         password        => 'musicbrainz',
-#       host            => '',
-#       port            => '',
+        host            => 'db',
+        port            => '5432',
         read_only   => 1,
     },
     # How to connect for administrative access
     SYSTEM    => {
         database    => 'template1',
         username    => 'musicbrainz',
-password        => 'musicbrainz',
-host            => 'db',
-port            => '5432',
+        password        => 'musicbrainz',
+        host            => 'db',
+        port            => '5432',
     },
     # How to connect when running maintenance scripts located under admin/.
     # This defaults to READWRITE if left undefined, but should be configured if
@@ -110,14 +110,14 @@ sub DB_SCHEMA_SEQUENCE { 30 }
 #               choose RT_MIRROR, as well as the usual READWRITE.
 # * RT_STANDALONE - This server neither generates nor uses replication
 #               packets.  Changes to the database are allowed.
-# sub REPLICATION_TYPE { RT_STANDALONE }
+sub REPLICATION_TYPE { RT_MIRROR }
 
 # If you plan to use the RT_MIRROR setting (replicated data from MusicBrainz' Live Data Feed)
 # you must sign in at https://metabrainz.org and generate an access token to access
 # the replication packets. Enter the access token below:
 # NOTE: DO NOT EXPOSE THIS ACCESS TOKEN PUBLICLY!
 #
-# sub REPLICATION_ACCESS_TOKEN { '' }
+# sub REPLICATION_ACCESS_TOKEN { 'YOUR_TOKEN_HERE' }
 
 ################################################################################
 # GPG Signature

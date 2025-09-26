@@ -18,4 +18,6 @@ echo "Database: $MUSICBRAINZ_POSTGRES_SERVER:$MUSICBRAINZ_POSTGRES_PORT/$MUSICBR
 echo "User: $MUSICBRAINZ_POSTGRES_USERNAME"
 
 # Call the actual replication script from MusicBrainz
-exec ./admin/replication/LoadReplicationChanges --verbose 2>&1 | tee logs/replication.log
+# Set PostgreSQL environment variables to ensure network connection
+export PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz
+exec ./admin/replication/LoadReplicationChanges 2>&1 | tee logs/replication.log

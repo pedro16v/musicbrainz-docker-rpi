@@ -11,6 +11,7 @@ search and replication in docker.
   - [Recommended hardware/VM](#recommended-hardwarevm)
   - [Required software](#required-software)
   - [External documentation](#external-documentation)
+* [ARM64 Replication Setup](#arm64-replication-setup)
 * [Components version](#components-version)
 * [Installation](#installation)
   - [Build Docker images](#build-docker-images)
@@ -82,6 +83,44 @@ If you use [UFW](https://help.ubuntu.com/community/UFW) to manage your firewall:
 * Command-line: [`docker` CLI reference](https://docs.docker.com/engine/reference/commandline/docker/)
   and [`docker compose` CLI reference](https://docs.docker.com/compose/reference/overview/)
 * Configuration: [Compose file version 3 reference](https://docs.docker.com/compose/compose-file/)
+
+## ARM64 Replication Setup
+
+For ARM64 systems (Raspberry Pi, ARM servers), we provide a minimal replication-only setup that's optimized for lower resource requirements.
+
+### Quick Start for ARM64
+
+1. **Start the minimal containers:**
+   ```bash
+   docker compose -f compose/db-minimal-arm64.yml up -d
+   ```
+
+2. **Run the automated setup:**
+   ```bash
+   ./scripts/setup-replication.sh
+   ```
+
+3. **Start replication:**
+   ```bash
+   docker compose -f compose/db-minimal-arm64.yml exec musicbrainz-minimal replication.sh &
+   ```
+
+### ARM64 Requirements
+
+- **CPU**: ARM64 compatible (Raspberry Pi 4+, ARM servers)
+- **RAM**: 2GB minimum (4GB+ recommended)
+- **Disk**: 10GB+ free space
+- **Network**: Stable internet connection for replication
+
+### ARM64 Features
+
+- ✅ **Live replication** from MusicBrainz Live Data Feed
+- ✅ **Minimal resource usage** optimized for ARM64
+- ✅ **PostgreSQL database** with replication tables
+- ✅ **Automated setup** with dependency installation
+- ✅ **Background processing** for continuous replication
+
+For detailed ARM64 setup instructions, see [REPLICATION-SETUP-GUIDE.md](REPLICATION-SETUP-GUIDE.md).
 
 ## Components version
 
