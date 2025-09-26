@@ -1,5 +1,17 @@
 # MusicBrainz ARM64 Replication - Quick Reference
 
+## Digital Ocean Deployment
+
+```bash
+# One-command deployment
+curl -sSL https://raw.githubusercontent.com/pedro16v/musicbrainz-docker-rpi/main/scripts/deploy-arm64.sh | sudo bash
+
+# Manual deployment
+git clone https://github.com/pedro16v/musicbrainz-docker-rpi.git musicbrainz-docker-arm
+cd musicbrainz-docker-arm
+sudo ./scripts/deploy-arm64.sh
+```
+
 ## Setup Commands
 
 ```bash
@@ -52,6 +64,22 @@ docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWOR
 
 # Test replication
 docker compose exec musicbrainz-minimal bash -c 'cd /musicbrainz-server && PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz timeout 60 ./admin/replication/LoadReplicationChanges'
+```
+
+## Digital Ocean Monitoring
+
+```bash
+# Check system resources
+htop
+free -h
+df -h
+
+# Check droplet metrics
+curl -sSL https://repos.insights.digitalocean.com/install.sh | bash
+
+# Monitor replication with views
+PGPASSWORD=musicbrainz psql -h localhost -U musicbrainz -d musicbrainz_db -c "SELECT * FROM replication_status;"
+PGPASSWORD=musicbrainz psql -h localhost -U musicbrainz -d musicbrainz_db -c "SELECT * FROM database_size;"
 ```
 
 ## Container Management

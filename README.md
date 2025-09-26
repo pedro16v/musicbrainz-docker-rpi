@@ -12,6 +12,7 @@ search and replication in docker.
   - [Required software](#required-software)
   - [External documentation](#external-documentation)
 * [ARM64 Replication Setup](#arm64-replication-setup)
+* [Digital Ocean Deployment](#digital-ocean-deployment)
 * [Components version](#components-version)
 * [Installation](#installation)
   - [Build Docker images](#build-docker-images)
@@ -121,6 +122,34 @@ For ARM64 systems (Raspberry Pi, ARM servers), we provide a minimal replication-
 - ✅ **Background processing** for continuous replication
 
 For detailed ARM64 setup instructions, see [REPLICATION-SETUP-GUIDE.md](REPLICATION-SETUP-GUIDE.md).
+
+## Digital Ocean Deployment
+
+For Digital Ocean ARM64 droplets, we provide a fully automated deployment script that handles everything from system optimization to replication setup.
+
+### One-Command Deployment
+
+```bash
+# Deploy to Digital Ocean ARM64 droplet
+curl -sSL https://raw.githubusercontent.com/pedro16v/musicbrainz-docker-rpi/main/scripts/deploy-arm64.sh | sudo bash
+```
+
+### What's Included
+
+- ✅ **System optimization** (swap file, Digital Ocean analytics)
+- ✅ **Dependency installation** (Docker, PostgreSQL client, monitoring tools)
+- ✅ **Automated setup** (container building, replication configuration)
+- ✅ **Database views** (monitoring and statistics)
+- ✅ **Port publishing** (database access from external systems)
+
+### Digital Ocean Requirements
+
+- **RAM**: 2GB minimum (4GB recommended)
+- **vCPUs**: 1-2 ARM64 cores
+- **Storage**: 25GB+ SSD
+- **OS**: Ubuntu 20.04+ or Debian 11+
+
+For detailed Digital Ocean deployment instructions, see [DIGITAL-OCEAN-DEPLOYMENT.md](DIGITAL-OCEAN-DEPLOYMENT.md).
 
 ## Components version
 
