@@ -805,6 +805,35 @@ the below command will also remove all unused images.
 docker system prune --all
 ```
 
+## Troubleshooting
+
+If you encounter issues during setup or operation, please refer to our comprehensive troubleshooting guide:
+
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Complete troubleshooting guide with common issues and solutions
+
+### Quick Diagnostics
+
+```bash
+# Check system status
+docker compose ps
+free -h && df -h
+
+# Check replication status
+docker compose exec musicbrainz-minimal tail -f logs/replication.log
+
+# Check database connection
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c "SELECT 1;"'
+```
+
+### Common Issues
+
+- **"This is not a mirror server!"** - Run `./scripts/setup-replication.sh` to configure replication
+- **"Invalid or missing REPLICATION_ACCESS_TOKEN"** - Configure your MetaBrainz access token
+- **"Can't locate [Module].pm in @INC"** - Missing Perl modules, install with `cpanm`
+- **Port conflicts** - Use different ports with environment variables
+
+For detailed solutions, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
 ## Removal
 
 Removing the directory isn’t enough, the Docker objects (images,

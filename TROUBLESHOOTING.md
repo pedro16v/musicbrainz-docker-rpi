@@ -1,166 +1,374 @@
-# Troubleshooting
+# MusicBrainz ARM64 Troubleshooting Guide
 
-## Table of contents
+This guide helps you diagnose and fix common issues with MusicBrainz replication on ARM64 systems.
 
-<!-- toc -->
+## 🚨 Quick Diagnostics
 
-- [InitDb.pl failed on macOS](#initdbpl-failed-on-macos)
-- [Resolving name failed](#resolving-name-failed)
-- [Loadable library and perl binaries are mismatched](#loadable-library-and-perl-binaries-are-mismatched)
-- [ImportError: No module named](#importerror-no-module-named)
-- [Unknown error executing apt-key](#unknown-error-executing-apt-key)
-- [amqp.exceptions.AccessRefused](#amqpexceptionsaccessrefused)
-
-<!-- tocstop -->
-
-## InitDb.pl failed on macOS
-
-When creating the database:
-
-```log
-Wed Feb 24 14:29:01 2021 : Creating indexes ... (CreateIndexes.sql)
-Wed Feb 24 14:29:12 2021 : psql:/musicbrainz-server/admin/sql/CreateIndexes.sql:467: server closed the connection unexpectedly
-Wed Feb 24 14:29:12 2021 : 	This probably means the server terminated abnormally
-Wed Feb 24 14:29:12 2021 : 	before or while processing the request.
-Wed Feb 24 14:29:12 2021 : psql:/musicbrainz-server/admin/sql/CreateIndexes.sql:467: fatal: connection to server was lost
-Error during CreateIndexes.sql at /musicbrainz-server/admin/InitDb.pl line 117.
-Wed Feb 24 14:29:12 2021 : InitDb.pl failed
-```
-
-Solution:
-
-Add more than 2GB memory to containers on macOS.
-
-## Resolving name failed
-
-When building Docker images:
-
-```log
-Err:1 http://security.debian.org/debian-security buster/updates InRelease
-  Temporary failure resolving 'security.debian.org'
-```
-
-Solution:
-
-That can be your `bridge` nework has no default gateway yet.
-That can be checked by running:
-
+### Check System Status
 ```bash
-docker network inspect bridge
+# Check if containers are running
+docker compose ps
+
+# Check system resources
+free -h && df -h
+
+# Check port conflicts
+netstat -tlnp | grep -E ':(5432|6379)'
+
+# Check Docker status
+systemctl status docker
 ```
 
-In such case, try restarting docker daemon:
-
+### Check Replication Status
 ```bash
-sudo service docker restart
+# Check if replication is running
+docker compose exec musicbrainz-minimal ps aux | grep LoadReplication
+
+# Check replication logs
+docker compose exec musicbrainz-minimal tail -f logs/replication.log
+
+# Check replication data
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c "SELECT COUNT(*) FROM dbmirror2.pending_data;"'
 ```
 
-## Loadable library and perl binaries are mismatched
+## 🔧 Common Issues and Solutions
 
-Using MusicBrainz server’s development setup only,
-when `musicbrainz` service doesn’t work as expected,
-and after retrieving its logs as follows:
+### 1. Container Startup Issues
 
+#### Problem: Containers fail to start
+**Symptoms:**
+- `docker compose ps` shows containers as "Exited"
+- Error messages about port conflicts or resource limits
+
+**Solutions:**
 ```bash
-docker compose logs --timestamps musicbrainz
+# Check logs for specific errors
+docker compose logs
+
+# Check port conflicts
+netstat -tlnp | grep -E ':(5432|6379)'
+
+# If ports are in use, use different ports
+export POSTGRES_EXTERNAL_PORT=5433
+export REDIS_EXTERNAL_PORT=6380
+docker compose up -d
+
+# Check resource limits
+docker stats
+
+# Increase memory limits if needed
+# Edit docker-compose.yml and increase memory limits
 ```
 
-returned logs contain the following error message:
+#### Problem: Database connection refused
+**Symptoms:**
+- `psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed`
+- Database connection errors in logs
 
-```log
-ListUtil.c: loadable library and perl binaries are mismatched (got handshake key 0xdb00080, needed 0xcd00080)
-```
-
-That means the Perl dependencies have been installed with another
-version of Perl. It happens after the required version of Perl for
-MusicBrainz Server has changed, mostly when switching from/to
-different branches or versions of `musicbrainz-server`.
-
-Solution:
-
-Remove installed Perl dependencies and restart `musicbrainz` service;
-It will automatically reinstall them all using current Perl version:
-
+**Solutions:**
 ```bash
-sudo rm -fr "$MUSICBRAINZ_SERVER_LOCAL_ROOT/perl_modules/
-docker compose restart musicbrainz
+# Check if database container is running
+docker compose ps db
+
+# Check database logs
+docker compose logs db
+
+# Test database connection
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c "SELECT 1;"'
+
+# Restart database container
+docker compose restart db
 ```
 
-## ImportError: No module named
+### 2. Replication Issues
 
-Using Search Index Rebuilder’s development setup only,
-when `indexer` service doesn’t work as expected,
-and python commands return the following:
+#### Problem: "This is not a mirror server!"
+**Symptoms:**
+- Error message: `This is not a mirror server!`
+- Replication fails to start
 
-```log
-Traceback (most recent call last):
-[...]
-ImportError: No module named [...]
-```
-
-(where the latest `[...]` may be `sqlalchemy` or any other dependency)
-
-Solution:
-
-Remove all installed Python packages and installation cache as follows:
-
+**Solutions:**
 ```bash
-docker compose exec indexer rm -fr /code/.cache /code/venv-musicbrainz-docker
-docker compose restart indexer
+# Check replication type configuration
+docker compose exec musicbrainz-minimal grep -A 2 REPLICATION_TYPE /musicbrainz-server/lib/DBDefs.pm
+
+# Should show: sub REPLICATION_TYPE { RT_MIRROR }
+# If not, reconfigure:
+./scripts/setup-replication.sh
 ```
 
-Python packages are downloaded again and installed again when the
-service `indexer` restarts.
+#### Problem: "Invalid or missing REPLICATION_ACCESS_TOKEN"
+**Symptoms:**
+- Error message: `Invalid or missing REPLICATION_ACCESS_TOKEN in DBDefs.pm`
+- Replication fails to authenticate
 
-## Unknown error executing apt-key
-
-When building Docker image for the service `musicbrainz`:
-
-``` log
-Err:1 https://deb.nodesource.com/node_20.x nodistro InRelease
-  Unknown error executing apt-key
-[...]
-W: GPG error: https://deb.nodesource.com/node_20.x nodistro InRelease: Unknown error executing apt-key
-E: The repository 'https://deb.nodesource.com/node_20.x nodistro InRelease' is not signed.
-```
-
-This may happen if your system is hindering file permissions.
-You can find out by adding `RUN ls -l file` commands in the
-Dockerfile.
-
-Solution:
-
-Configure your system to keep the file permissions defined in the Git repository
-and to preserve the permissions of the files copied through Docker.
-
-If it isn’t possible, for example with the Unraid operating system,
-run additional `chmod` commands in the Dockerfile; See comments to the
-issue [#263](https://github.com/metabrainz/musicbrainz-docker/pull/263).
-
-## amqp.exceptions.AccessRefused
-
-When running `sir amqp_setup` to prepare live indexing:
-
-```log
-amqp.exceptions.AccessRefused: (0, 0): (403) ACCESS_REFUSED - Login was refused using authentication mechanism AMQPLAIN. For details see the broker logfile.
-```
-
-The service `mq` is sometimes not creating the user `sir` as expected.
-
-
-Solution:
-
-Recreate the container `mq` as follows:
-
+**Solutions:**
 ```bash
-docker compose up --force-recreate -d mq
+# Check if token file exists
+ls -la local/secrets/metabrainz_access_token
+
+# Check token configuration
+docker compose exec musicbrainz-minimal grep -A 2 REPLICATION_ACCESS_TOKEN /musicbrainz-server/lib/DBDefs.pm
+
+# Reconfigure token
+./scripts/setup-replication.sh
 ```
 
-Check if it started with creating the user `sir`:
+#### Problem: "Can't locate [Module].pm in @INC"
+**Symptoms:**
+- Error messages like `Can't locate aliased.pm in @INC`
+- Perl module not found errors
 
+**Solutions:**
 ```bash
-docker compose logs -t mq | grep 'Creating user .sir.'
+# Install missing Perl modules
+docker compose exec --user root musicbrainz-minimal cpanm aliased GnuPG Redis List::AllUtils
+
+# Or rebuild container with updated Dockerfile
+docker compose build musicbrainz-minimal
+docker compose up -d
 ```
 
-If it doesn’t mention _creating user sir_, try recreating `mq` again.
+### 3. Database Issues
 
+#### Problem: "relation 'dbmirror2.pending_data' does not exist"
+**Symptoms:**
+- Error message about missing replication tables
+- Replication setup fails
+
+**Solutions:**
+```bash
+# Create replication tables
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -f /musicbrainz-server/admin/sql/dbmirror2/ReplicationSetup.sql'
+
+# Verify tables exist
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c "\dt dbmirror2.*"'
+```
+
+#### Problem: Database connection timeout
+**Symptoms:**
+- Database connection hangs or times out
+- Slow query performance
+
+**Solutions:**
+```bash
+# Check database resource usage
+docker stats db
+
+# Check database configuration
+docker compose exec db psql -U musicbrainz -d musicbrainz_db -c "SHOW shared_buffers;"
+docker compose exec db psql -U musicbrainz -d musicbrainz_db -c "SHOW max_connections;"
+
+# Increase memory limits if needed
+# Edit docker-compose.yml and increase db memory limits
+```
+
+### 4. Performance Issues
+
+#### Problem: Slow replication
+**Symptoms:**
+- Replication takes a long time to process changes
+- High CPU/memory usage
+
+**Solutions:**
+```bash
+# Check system resources
+htop
+free -h
+df -h
+
+# Check container resource usage
+docker stats
+
+# Optimize database settings
+docker compose exec db psql -U musicbrainz -d musicbrainz_db -c "ALTER SYSTEM SET shared_buffers = '512MB';"
+docker compose exec db psql -U musicbrainz -d musicbrainz_db -c "ALTER SYSTEM SET work_mem = '4MB';"
+docker compose exec db psql -U musicbrainz -d musicbrainz_db -c "SELECT pg_reload_conf();"
+
+# Restart containers
+docker compose restart
+```
+
+#### Problem: High memory usage
+**Symptoms:**
+- System running out of memory
+- Containers being killed by OOM killer
+
+**Solutions:**
+```bash
+# Check memory usage
+free -h
+docker stats
+
+# Add swap if not present
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Reduce container memory limits
+# Edit docker-compose.yml and reduce memory limits
+```
+
+### 5. Configuration Issues
+
+#### Problem: Wrong environment configuration
+**Symptoms:**
+- Containers using wrong database host/port
+- Configuration not matching environment
+
+**Solutions:**
+```bash
+# Check current configuration
+docker compose exec musicbrainz-minimal env | grep -E '(POSTGRES|REDIS)'
+
+# Use environment-specific compose file
+docker compose -f compose/musicbrainz-test.yml up -d
+
+# Or set environment variables
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=5432
+docker compose up -d
+```
+
+## 🔍 Advanced Troubleshooting
+
+### Debug Mode
+```bash
+# Enable debug logging
+docker compose exec musicbrainz-minimal bash -c 'cd /musicbrainz-server && MUSICBRAINZ_DEBUG=1 ./admin/replication/LoadReplicationChanges'
+
+# Check detailed logs
+docker compose logs --tail=100 musicbrainz-minimal
+```
+
+### Database Inspection
+```bash
+# Check database size
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c "SELECT pg_size_pretty(pg_database_size('\''musicbrainz_db'\''));"'
+
+# Check replication status
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c "SELECT * FROM musicbrainz.replication_control;"'
+
+# Check pending data
+docker compose exec musicbrainz-minimal bash -c 'PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c "SELECT COUNT(*) FROM dbmirror2.pending_data;"'
+```
+
+### Network Troubleshooting
+```bash
+# Test network connectivity
+docker compose exec musicbrainz-minimal ping db
+docker compose exec musicbrainz-minimal ping redis
+
+# Check DNS resolution
+docker compose exec musicbrainz-minimal nslookup db
+docker compose exec musicbrainz-minimal nslookup redis
+
+# Test port connectivity
+docker compose exec musicbrainz-minimal telnet db 5432
+docker compose exec musicbrainz-minimal telnet redis 6379
+```
+
+## 🚀 Recovery Procedures
+
+### Complete Reset
+```bash
+# Stop all containers
+docker compose down
+
+# Remove volumes (WARNING: This deletes all data)
+docker volume prune -f
+
+# Rebuild containers
+docker compose build --no-cache
+
+# Start fresh
+docker compose up -d
+
+# Run setup
+./scripts/setup-replication.sh
+```
+
+### Partial Reset
+```bash
+# Stop replication
+docker compose exec musicbrainz-minimal pkill -f LoadReplicationChanges
+
+# Restart containers
+docker compose restart
+
+# Reconfigure replication
+./scripts/setup-replication.sh
+
+# Restart replication
+docker compose exec musicbrainz-minimal replication.sh &
+```
+
+### Data Recovery
+```bash
+# Backup current data
+docker compose exec db pg_dump -U musicbrainz musicbrainz_db > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Restore from backup
+docker compose exec -T db psql -U musicbrainz musicbrainz_db < backup_file.sql
+```
+
+## 📞 Getting Help
+
+### Log Collection
+```bash
+# Collect system information
+uname -a > system_info.txt
+free -h >> system_info.txt
+df -h >> system_info.txt
+docker --version >> system_info.txt
+docker compose version >> system_info.txt
+
+# Collect container logs
+docker compose logs > container_logs.txt
+
+# Collect replication logs
+docker compose exec musicbrainz-minimal cat logs/replication.log > replication_logs.txt
+```
+
+### Common Error Messages
+
+| Error Message | Cause | Solution |
+|---------------|-------|----------|
+| `This is not a mirror server!` | Wrong replication type | Run `./scripts/setup-replication.sh` |
+| `Invalid or missing REPLICATION_ACCESS_TOKEN` | Missing or invalid token | Configure token in setup script |
+| `Can't locate [Module].pm in @INC` | Missing Perl module | Install module with `cpanm` |
+| `relation 'dbmirror2.pending_data' does not exist` | Missing replication tables | Run ReplicationSetup.sql |
+| `connection to server failed` | Database not accessible | Check database container status |
+| `Port already in use` | Port conflict | Use different ports or stop conflicting service |
+
+### Support Resources
+- [MusicBrainz Documentation](https://musicbrainz.org/doc/MusicBrainz_Database)
+- [Docker Compose Documentation](https://docs.docker.com/compose/)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [GitHub Issues](https://github.com/pedro16v/musicbrainz-docker-rpi/issues)
+
+## 🔄 Maintenance
+
+### Regular Checks
+```bash
+# Weekly system check
+./scripts/validate-deployment.sh
+
+# Monthly log rotation
+docker compose exec musicbrainz-minimal bash -c 'find logs/ -name "*.log" -mtime +30 -delete'
+
+# Quarterly backup
+docker compose exec db pg_dump -U musicbrainz musicbrainz_db > backup_$(date +%Y%m%d).sql
+```
+
+### Performance Monitoring
+```bash
+# Monitor replication progress
+watch -n 30 'docker compose exec musicbrainz-minimal bash -c "PGHOST=db PGPORT=5432 PGPASSWORD=musicbrainz psql -U musicbrainz -d musicbrainz_db -c \"SELECT COUNT(*) FROM dbmirror2.pending_data;\""'
+
+# Monitor system resources
+watch -n 10 'free -h && df -h'
+```
+
+This troubleshooting guide should help you resolve most common issues with MusicBrainz replication on ARM64 systems. If you encounter issues not covered here, please collect the relevant logs and system information before seeking help.

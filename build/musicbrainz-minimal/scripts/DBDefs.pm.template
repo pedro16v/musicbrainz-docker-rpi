@@ -1,0 +1,60 @@
+package DBDefs;
+
+use strict;
+use warnings;
+
+use MusicBrainz::Server::DatabaseConnectionFactory;
+
+MusicBrainz::Server::DatabaseConnectionFactory->register_databases(
+    # How to connect when we need read-write access to the database
+    READWRITE => {
+        database    => '${POSTGRES_DB}',
+        username    => '${POSTGRES_USER}',
+        password    => '${POSTGRES_PASSWORD}',
+        host        => '${POSTGRES_HOST}',
+        port        => '${POSTGRES_PORT}',
+    },
+    # How to connect to a test database
+    TEST => {
+        database    => '${POSTGRES_DB}_test',
+        username    => '${POSTGRES_USER}',
+        password    => '${POSTGRES_PASSWORD}',
+        host        => '${POSTGRES_HOST}',
+        port        => '${POSTGRES_PORT}',
+    },
+    # How to connect for read-only access
+    READONLY => {
+        database    => '${POSTGRES_DB}',
+        username    => '${POSTGRES_USER}',
+        password    => '${POSTGRES_PASSWORD}',
+        host        => '${POSTGRES_HOST}',
+        port        => '${POSTGRES_PORT}',
+        read_only   => 1,
+    },
+    # How to connect for administrative access
+    SYSTEM => {
+        database    => 'template1',
+        username    => '${POSTGRES_USER}',
+        password    => '${POSTGRES_PASSWORD}',
+        host        => '${POSTGRES_HOST}',
+        port        => '${POSTGRES_PORT}',
+    },
+);
+
+# Schema sequence number
+sub DB_SCHEMA_SEQUENCE { 30 }
+
+# Replication configuration
+sub REPLICATION_TYPE { ${REPLICATION_TYPE} }
+sub REPLICATION_ACCESS_TOKEN { '${REPLICATION_ACCESS_TOKEN}' }
+
+# Redis configuration
+sub REDIS_SERVER { '${REDIS_SERVER}' }
+sub REDIS_PORT { ${REDIS_PORT} }
+
+# Other settings
+sub DB_STAGING_SERVER { 0 }
+sub DB_READ_ONLY { 0 }
+sub DB_STAGING_TESTING_FEATURES { 0 }
+
+1;

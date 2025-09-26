@@ -38,6 +38,7 @@ RUN apt-get update && apt-get install -y \
     libgnupg-perl \
     libredis-perl \
     cpanminus \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 # Install additional Perl modules via CPAN that aren't in Ubuntu packages
@@ -50,6 +51,8 @@ RUN cpanm --notest --quiet \
     Throwable \
     DBIx::Connector \
     GnuPG \
+    Redis \
+    aliased \
     || echo "Some CPAN modules may not be available, will try with git clone"
 
 # Clone MusicBrainz server for replication scripts only
@@ -65,6 +68,8 @@ WORKDIR /musicbrainz-server
 COPY scripts/* /usr/local/bin/
 # Copy a minimal DBDefs.pm for replication
 RUN cp /usr/local/bin/DBDefs.pm lib/DBDefs.pm
+# Create template for environment-based configuration
+RUN cp lib/DBDefs.pm lib/DBDefs.pm.template
 RUN chmod +x /usr/local/bin/*
 
 # Environment variables for replication

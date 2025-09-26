@@ -1,29 +1,45 @@
-# Description: Build and run local development copy of MusicBrainz Server
+# Development MusicBrainz replication setup
+# Connects to external database for development
 
 services:
-  musicbrainz:
-    build:
-      context: build/musicbrainz-dev
-      args:
-        - POSTGRES_VERSION=${POSTGRES_VERSION:-16}
-    volumes:
-      - ${MUSICBRAINZ_SERVER_LOCAL_ROOT:?Missing path of MusicBrainz Server working copy}:/musicbrainz-server
-      - ./.musicbrainz-dev.bash_history.d/:/root/.bash_history.d/:z
-    environment:
-      - MUSICBRAINZ_CATALYST_DEBUG=${MUSICBRAINZ_CATALYST_DEBUG:-0}
-      - MUSICBRAINZ_DEVELOPMENT_SERVER=${MUSICBRAINZ_DEVELOPMENT_SERVER:-1}
-      - PERL_CPANM_HOME=${MUSICBRAINZ_PERL_CPANM_HOME:-/musicbrainz-server/.cpanm}
-      - MUSICBRAINZ_PERL_LOCAL_LIB=${MUSICBRAINZ_PERL_LOCAL_LIB:-/musicbrainz-server/perl_modules}
-      - MUSICBRAINZ_SERVER_PROCESSES=${MUSICBRAINZ_SERVER_PROCESSES:-1}
-    depends_on:
-      - validator
-  validator:
-    image: ghcr.io/validator/validator:21.7.10
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "200k"
-        max-file: "10"
+  redis-dev:
+    image: redis:3-alpine
     restart: unless-stopped
-    expose:
-      - "8888"
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6381}:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 64MB
+        reservations:
+          memory: 32MB
+
+  musicbrainz-minimal-dev:
+    build:
+      context: build/musicbrainz-minimal
+    volumes:
+      - ${DUMP_PATH:-./dbdump}:/media/dbdump
+      - ${LOG_PATH:-./logs-dev}:/musicbrainz-server/logs
+      - ${SECRETS_PATH:-./local/secrets}:/secrets:ro
+    restart: unless-stopped
+    environment:
+      - POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-musicbrainz_db}
+      - POSTGRES_USER=${POSTGRES_USER:-musicbrainz}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-musicbrainz}
+      - MUSICBRAINZ_BASE_DOWNLOAD_URL=${MUSICBRAINZ_BASE_DOWNLOAD_URL:-https://data.metabrainz.org/pub/musicbrainz}
+      - MUSICBRAINZ_REDIS_SERVER=${REDIS_SERVER:-redis-dev}
+      - MUSICBRAINZ_POSTGRES_SERVER=${POSTGRES_HOST:-localhost}
+      - MUSICBRAINZ_POSTGRES_READONLY_SERVER=${POSTGRES_HOST:-localhost}
+      - REDIS_SERVER=${REDIS_SERVER:-redis-dev}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+    depends_on:
+      - redis-dev
+    deploy:
+      resources:
+        limits:
+          memory: 128MB
+        reservations:
+          memory: 64MB
+    command: sleep infinity
