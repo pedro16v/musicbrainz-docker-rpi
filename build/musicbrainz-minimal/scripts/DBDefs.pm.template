@@ -1,8 +1,11 @@
-package DBDefs;
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
 
+package DBDefs;
+use parent 'DBDefs::Default';
+use MusicBrainz::Server::Replication qw( :replication_type );
 use MusicBrainz::Server::DatabaseConnectionFactory;
 
 MusicBrainz::Server::DatabaseConnectionFactory->register_databases(

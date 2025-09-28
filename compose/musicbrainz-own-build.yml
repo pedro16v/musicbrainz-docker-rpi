@@ -1,8 +1,0 @@
-# Description: Build own image of MusicBrainz Server for release
-
-services:
-  musicbrainz:
-    build:
-      context: build/musicbrainz
-      args:
-        - POSTGRES_VERSION=${POSTGRES_VERSION:-16}
