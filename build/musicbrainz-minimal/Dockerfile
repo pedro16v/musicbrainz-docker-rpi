@@ -61,16 +61,16 @@ RUN git clone --depth=1 --branch $MUSICBRAINZ_SERVER_VERSION https://github.com/
 
 WORKDIR /musicbrainz-server
 
-# Copy minimal scripts
-# Copy a minimal DBDefs.pm for replication
-
-# Copy minimal scripts
-COPY scripts/* /usr/local/bin/
-# Copy a minimal DBDefs.pm for replication
-RUN cp /usr/local/bin/DBDefs.pm lib/DBDefs.pm
-# Create template for environment-based configuration
-RUN cp lib/DBDefs.pm lib/DBDefs.pm.template
+# Copy minimal scripts and configuration
+COPY scripts/*.sh /usr/local/bin/
+COPY scripts/verify-token.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/*
+
+# Copy DBDefs.pm template for environment-based configuration
+COPY scripts/DBDefs.pm.template /musicbrainz-server/lib/DBDefs.pm.template
+
+# Copy static DBDefs.pm as fallback (will be overwritten by entrypoint)
+COPY scripts/DBDefs.pm /musicbrainz-server/lib/DBDefs.pm
 
 # Environment variables for replication
 ENV MUSICBRAINZ_POSTGRES_SERVER=db \
