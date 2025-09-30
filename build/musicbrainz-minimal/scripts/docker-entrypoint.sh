@@ -34,16 +34,24 @@ configure_dbdefs() {
         
         # Apply template substitution
         envsubst < "$template_file" > "$target_file"
-        
+
         if [ $? -eq 0 ]; then
             log "DBDefs.pm configured successfully"
-            
+
             # Verify configuration
             if grep -q "REPLICATION_ACCESS_TOKEN" "$target_file"; then
                 log "Replication token configuration verified"
+                # Show the actual token line (masked for security)
+                token_line=$(grep "REPLICATION_ACCESS_TOKEN" "$target_file" | head -1)
+                token_preview=$(echo "$token_line" | sed 's/\(.\{50\}\).*/\1.../')
+                log "Token line preview: $token_preview"
             else
                 log "Warning: Replication token not found in generated DBDefs.pm"
             fi
+
+            # Ensure file is readable
+            chmod 644 "$target_file"
+            log "Set permissions on DBDefs.pm: 644"
         else
             log "Error: Failed to configure DBDefs.pm from template"
             exit 1

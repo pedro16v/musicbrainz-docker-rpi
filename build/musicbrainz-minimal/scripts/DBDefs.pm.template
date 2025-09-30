@@ -49,7 +49,12 @@ sub DB_SCHEMA_SEQUENCE { 30 }
 
 # Replication configuration
 sub REPLICATION_TYPE { RT_MIRROR }
-sub REPLICATION_ACCESS_TOKEN { '${REPLICATION_ACCESS_TOKEN}' }
+
+# Replication access token - loaded from environment
+# Get token at https://metabrainz.org
+sub REPLICATION_ACCESS_TOKEN {
+    return '${REPLICATION_ACCESS_TOKEN}';
+}
 
 # Redis configuration
 sub REDIS_SERVER { '${REDIS_SERVER}' }
