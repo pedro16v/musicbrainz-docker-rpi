@@ -88,6 +88,7 @@ services:
     volumes:
       - /mnt/storage/musicbrainz/dbdump:/media/dbdump
       - ./logs:/musicbrainz-server/logs
+      - ./default/replication.cron:/etc/cron.d/replication
     restart: unless-stopped
     environment:
       - POSTGRES_HOST=${POSTGRES_HOST:-db}
@@ -111,4 +112,4 @@ services:
           memory: 256MB
         reservations:
           memory: 128MB
-    command: ["./replication.sh"]
+    command: ["cron", "-f"]
